@@ -13,6 +13,8 @@ This tool converts the morph target maps to their new vertex order.
 5. Attach your content packs
 6. Add the ConvertMCS.cs component to the MCS character.
 
+![Convert MCS component](convertmcs.jpg)
+
 ## Usage
 In your Unity 2017/2018 project:
 1. Select the meshes you wish to convert (default selects all)
@@ -23,9 +25,6 @@ In your Unity 2019+ project:
 1. Select all meshes you wish to convert.
 2. Click "Convert". This may take a while and will overwrite the old morph streamingasset files.
 3. Restart Unity.
-
-![Convert MCS component](convertmcs.jpg)
-
 
 ## Limitations
 While this converts all the morph maps, the MCS 1.7 system also relies on a "JCT manager" for some morphs that has its own mapping. I have not yet figured out how to remap those, so if you run into any  issues, try disabling the JCT Transition component on the hip of your MCS character.
