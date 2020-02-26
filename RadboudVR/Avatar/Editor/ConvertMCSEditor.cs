@@ -43,7 +43,7 @@ namespace RadboudVR.Avatar
                 }
                 GUILayout.EndHorizontal();
                 //GUILayout.BeginVertical(EditorStyles.helpBox);
-                scrollPos = EditorGUILayout.BeginScrollView(scrollPos, GUILayout.MaxHeight(200));
+                scrollPos = EditorGUILayout.BeginScrollView(scrollPos, GUILayout.MaxHeight(200), GUILayout.MinHeight(64));
                 foreach (MeshListItem ms in convertMCS._meshList) {
                     GUILayout.BeginHorizontal();
                     ms.isSelected = EditorGUILayout.Toggle(ms.isSelected, GUILayout.MaxWidth(14));
@@ -65,6 +65,19 @@ namespace RadboudVR.Avatar
                 convertMCS.Convert();
             }
             GUILayout.EndVertical();
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Fix JCT morph data", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox("Use Export JCT in Unity 2018 or earlier, then copy the extracted file (MCS/ConversionMaps/jctmorphs.json) to your Unity 2019 project and use Import JCT.", MessageType.Info);
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button(new GUIContent("Export JCT", "Export JCTTransition morph data (<2019)"))) {
+                convertMCS.ExportJCT();
+            }           
+            if (GUILayout.Button(new GUIContent("Import JCT", "Import and override JCTTransition morph data (2019+)"))) {
+                convertMCS.ImportJCT();
+            }
+            GUILayout.EndHorizontal();
+
             serializedObject.ApplyModifiedProperties();
         }
     }

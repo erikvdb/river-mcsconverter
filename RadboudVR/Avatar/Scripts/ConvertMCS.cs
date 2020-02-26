@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using UnityEditor;
 using MCS;
 using MCS.FOUNDATIONS;
 using MCS.SERVICES;
 using MCS_Utilities.Morph;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace RadboudVR.Avatar
 {
@@ -16,13 +18,23 @@ namespace RadboudVR.Avatar
         [SerializeField]
         public List<MeshListItem> _meshList = new List<MeshListItem>();
 
+        string mapdir { get { return Application.dataPath + "/MCS/ConversionMaps"; } }
+
+        void Start()
+        {
+            // JCT morphs are being re-imported incorrectly every time you reload Unity or hit play, so we'll have to correct it every time.
+            ImportJCT();
+        }
+
+        /// <summary>
+		/// Extract morphs from every selected mesh.
+		/// </summary>
         public void Extract()
         {
-            string conversionMapPath = Application.dataPath + "/MCS/ConversionMaps";
-            Directory.CreateDirectory(conversionMapPath);
+            Directory.CreateDirectory(mapdir);
 
             foreach (MeshListItem ms in _meshList) {               
-                string cdPath = conversionMapPath + "/" + ms.mesh.name + ".json";
+                string cdPath = mapdir + "/" + ms.mesh.name + ".json";
                 if (File.Exists(cdPath) || !ms.isSelected) {
                     // Skip already extracted or unselected meshes
                     continue;
@@ -36,13 +48,14 @@ namespace RadboudVR.Avatar
                 ms.isSelected = false;
             }
             RefreshMeshList();
-            Debug.Log("Extract complete. Find your extracted vertex maps in: " + conversionMapPath);
+            Debug.Log("Extract complete. Find your extracted vertex maps in: " + mapdir);
         }
 
+        /// <summary>
+		/// Loads extracted morph data and remaps vertices to match current models
+        /// /// </summary>
         public void Convert()
         {
-            string conversionMapPath = Application.dataPath + "/MCS/ConversionMaps";
-
             ProjectionMeshMap pmm = new ProjectionMeshMap();
             StreamingMorphs sm = new StreamingMorphs();
             StreamingMorphs.LoadMainThreadAssetPaths();
@@ -59,7 +72,7 @@ namespace RadboudVR.Avatar
 
                 // Read old vertex map
                 ShowProgress(smr.name, "Loading Vertex Map", 0);
-                string cdFile = conversionMapPath + "/" + smr.name + ".json";
+                string cdFile = mapdir + "/" + smr.name + ".json";
                 if (!File.Exists(cdFile)) {
                     Debug.LogWarning("Skipping:" + smr.name + ", vertex map not found!");
                     continue;
@@ -127,8 +140,11 @@ namespace RadboudVR.Avatar
                 ms.isSelected = false;
             }
             RefreshMeshList();
-            EditorUtility.ClearProgressBar();
             Debug.Log("Conversion Complete!");
+
+            #if UNITY_EDITOR
+                EditorUtility.ClearProgressBar();
+            #endif
         }
 
         public void RefreshMeshList()
@@ -147,10 +163,56 @@ namespace RadboudVR.Avatar
             }
             _meshList = newMeshList;
         }
+
+        /// <summary>
+		/// Export morph data from the JCTTransition component.
+		/// </summary>
+        public void ExportJCT()
+        {
+            JCTTransition jct = GetComponentInChildren<JCTTransition>();
+            if (jct == null) {
+                Debug.LogWarning("Failed to export JCT morphs: JCTTransition not found");
+                return;
+            }
+            
+            // Store in resources so we can (re)load JCTs in standalone builds
+            string jctpath = Application.dataPath + "/MCS/Resources/jctmorphs.json";
+            StreamWriter writer = new StreamWriter(jctpath, false);
+
+            // Create serializable struct for morph data that we can easily write to json
+            JCTMorphList morphList = new JCTMorphList();
+            morphList.morphs = jct.m_morphs;
+            writer.WriteLine(JsonUtility.ToJson(morphList));
+            writer.Close();
+            Debug.Log("JCT morph data exported!");
+        }
+
+        /// <summary>
+		/// Import JCTTransition morph data
+		/// </summary>
+        public void ImportJCT()
+        {
+            JCTTransition jct = GetComponentInChildren<JCTTransition>();
+            var jctData = Resources.Load<TextAsset>("jctmorphs");
+
+            if (jct == null || jctData == null) {
+                Debug.LogWarning("Failed to import JCT morphs.");
+                return;
+            }
+
+            // Grab morphList from json
+            JCTMorphList morphList = JsonUtility.FromJson<JCTMorphList>(jctData.text);
+            // Replace current jct morph data with the extracted data
+            jct.m_morphs = morphList.morphs;
+
+            Debug.Log("JCT morph data imported.");
+        }
         
         void ShowProgress(string elem, string info, float progress)
         {
-            EditorUtility.DisplayProgressBar("Processing " + elem + "...", info, progress);
+            #if UNITY_EDITOR
+                EditorUtility.DisplayProgressBar("Processing " + elem + "...", info, progress);
+            #endif
         }
 
         MorphData RemapMorphData(SkinnedMeshRenderer smr, MorphData morphData, Dictionary<int, int> tsMap)
@@ -218,6 +280,12 @@ namespace RadboudVR.Avatar
             this.mesh = mesh;
             isSelected = select;
         }
+    }
+
+    [System.Serializable]
+    public struct JCTMorphList
+    {
+        public JCTMorph[] morphs;
     }
 }
 
