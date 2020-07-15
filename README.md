@@ -1,4 +1,4 @@
-**OBSOLETE:** This tool has been succeeded by <https://github.com/erikvdb/mcs-toolkit>
+>**NOTE OF OBSOLESCENCE** This tool has been succeeded by <https://github.com/erikvdb/mcs-toolkit>
 
 # MCS Converter
 This converter remaps the morphs of the MCS avatar system (v1.7) so they will work with Unity 2019 and later. 
